@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+	
+	<head>
+
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+		
+		<script type="text/javascript" src="jquery-1.7.2.js"></script>
+    	
+   		<script src="kinetic-v4.4.3.min.js"></script>
+		<script src="coord_plane-v0.1.js"></script>
+		<link rel="stylesheet" type="text/css" href="ugraphs.css">
+	
+		<title> WA Intergration Test Suite v1.0</title>
+		
+		<style type="text/css">
+			body { 
+				margin:0px; 
+				padding:0px;
+			}
+			#container {
+				position: relative;
+				left:0px; 
+				margin:5px 0px; 
+				padding:0px;
+				width:640px;
+				height:480px;
+				background-color: yellow;
+				border:1px solid black;
+			}
+			#input {
+				position: relative;
+				left:0px; 
+				/*margin-bottom:5px; */
+				padding:0px 5px;
+				width:640px;
+				/*height:50px;*/
+				background-color: yellow;
+				border:1px solid black;
+			}
+
+			#interface{
+				border: 1px solid black;
+				padding: 6px;
+				margin: 0 auto;
+				margin-left: 424px;
+				padding-bottom: 10px;
+				margin-top: 5px;
+				margin-bottom: 10px;
+			}
+
+			#function_type{
+				margin-top: 8px;
+				margin-left: 11%;
+				border-radius: 8px;
+			}
+			
+			.text_input{
+				background-color: #fed;
+				border-radius: 5px;
+				font-size:.8em;
+				text-align:right;
+			}
+			.text_output {
+				background-color: #ddd;
+			}
+			input[type=button] {
+				border-radius: 5px;
+				box-shadow: 5px 5px 3px #888;
+			}
+		             
+      	</style>
+	
+	  <script type="text/javascript">
+	  
+	  	function getURLParameter(name) {
+    		return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
+		}
+		
+		
+		//url parameters
+		var poly_a = getURLParameter("a") !== null ? getURLParameter("a").split(",") : null; 
+
+		var pts = getURLParameter("pts") !== null ? getURLParameter("pts") : null;
+		var integrate = getURLParameter("integrate") !== null ? getURLParameter("integrate").split(",") : null;
+		
+		var animate = getURLParameter("animate") !== "false" ? true : false;
+		//alert(animate);
+
+		var eqn_form = getURLParameter("show_input") !== null ? getURLParameter("show_input").toLowerCase() : null;
+		if (eqn_form === null) {
+			if (poly_a !== null) {
+				eqn_form = "polynomial";
+			} else if (pts !== null) {
+				eqn_form = "points";
+			} else {
+				eqn_form = "polynomial";
+			}
+		} 
+		
+		var fit = getURLParameter("fit") !== null ? getURLParameter("fit") : "auto"; 
+		// other options are: "full"
+
+		if (fit === "auto") {
+	    	var dim = Math.min(0.95*$(window).width(), 0.8*$(window).height());
+		} else if (fit === "full") {
+			var dim = Math.min($(window).width(), $(window).height())-16;
+		} else if (fit === "none") {
+			var dim = 600;
+		}
+		var width = dim;
+		var height = dim;
+		
+		// range of x and y axes (as well as dx)
+		var range = getURLParameter("range") !== null ? parseFloat(getURLParameter("range")) : 10; 
+		//var range = 20;
+
+		var sigFigs = 2;
+		
+		// dx
+		var dx = width <= 300 ? range/5 : range/10;
+		dx = getURLParameter("dx") !== null ? parseFloat(getURLParameter("dx")) : dx; 
+
+		//alert(eqn_form);
+
+		$(document).ready(function(){
+			
+			//Set up dimensions of the container		
+			$("#container").width(width);
+			$("#container").height(height);
+			
+			//Set up input
+			$("#input").width(width*.98);
+			
+			$("#interface").width(width*.98);
+
+			if ($(window).width() >= width){
+				var leftpx = Math.floor(($(window).width() - width)/2)
+			} else {
+				var leftpx = 0;
+			}
+			$("#input").css("left",leftpx);
+			$("#container").css("left",leftpx);
+			$("#interface").css("left",leftpx);
+			$("#cc_small").css("right", leftpx); //$(window).width()-width);
+			
+	  	
+
+			//create the stage for the kineticjs objects
+			stage = new Kinetic.Stage({
+				container: "container",
+				width: width,
+				height: height
+			});
+			
+			//create a layer for the objects
+			plane_layer = new Kinetic.Layer();
+			
+			//create coordinate plain
+			coord_plane = new kjs_coord_plane({
+				layer: plane_layer,
+				width: width,
+				height: height,
+				xmin:-range,
+				xmax:range,
+				dx: dx,
+				xSigFigs:sigFigs,
+				ymin:-range,
+				ymax:range,
+				dy: dx,
+				ySigFigs:sigFigs,
+				input_div_id:"input",
+			});
+			
+			//add the layer to the stage
+			stage.add(plane_layer);
+			
+
+			//build interface with function type options
+			//alert(eqn_form);
+			if (eqn_form === "none") {
+				$("#input").remove();
+				$("#interface").remove();
+			} else {
+				coord_plane.build_function_type_interface({
+					div_id:"interface",
+					selected_function: eqn_form,
+				});
+				if (poly_a !== null) {
+					coord_plane.change_last_poly_a(poly_a);	
+				};
+			}
+
+			//alert(eqn_form);
+
+			if (poly_a !== null) {
+				//alert(poly_a);
+				
+				/*parabola = coord_plane.add_polynomial({
+					a: poly_a,
+					dx: 0.1,
+					name: "poly1",
+				});*/
+				
+				//parabola.draw();
+				
+				if (eqn_form == "polynomial") {
+					//parabola.build_poly_interface("input");
+					if (coord_plane.active_interface !== "polynomial"){
+						coord_plane.build_poly_interface();
+					}
+				} else if (eqn_form == "points") {
+					coord_plane.build_points_interface();
+				} else {
+					//$("#input").remove();
+					$("#input").html("");
+				}
+			}
+			
+
+ 	  		if (pts !== null) {
+ 	  		
+ 	  			coord_plane.add_points_from_list({
+ 	  				pts:pts,
+ 	  			}); 
+ 	  			
+ 	  		}
+ 	  		
+  	  		if (integrate !== null) {
+  	  			//alert(integrate[1]);
+  	  			coord_plane.add_numerical_integrator({
+  	  				params: integrate,
+  	  			});
+  	  		}
+	  		
+		});     
+      
+	          
+	  </script>
+
+	</head>
+
+	<body>
+
+		<div id="interface" style="height: 25px;"></div>
+    
+    	<div id="input" style="width: 522.928px; left: 416px;">Order: 
+    		<input id="poly_order_1" type="text" size="2" value="1"><br> 
+    			<div id="poly_eqn_1" style="background-color:#fdd; padding:5px;border-radius:5px;font-size:1.5em;">y = 
+    				<input id="a1" type="text" size="2" value="0" class="text_input"> x + 
+    					<input id="a0" type="text" size="2" value="0" class="text_input">
+    			</div>
+    	</div>
+
+    	<div id="container" style="width: 533.6px; height: 533.6px; left: 416px;">
+    		<div class="kineticjs-content" style="position: relative; display: none; width: 533.6px; height: 533.6px;">
+    			<canvas width="533" height="533" style="padding: 0px; margin: 0px; border: 0px; width: 533.6px; height: 533.6px; position: absolute; background: transparent;">
+    				
+    			</canvas>
+    		</div>
+    	</div>	
+	</body>
+</html>
